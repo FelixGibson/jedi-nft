@@ -1,2 +1,1 @@
-// All modules must be present here
-mod math;
+mod jedi_nft;
