@@ -14,6 +14,7 @@ mod JediNFT {
     use rules_erc721::erc721::interface::IERC721;
     use rules_erc721::introspection::erc165::{IERC165 as rules_erc721_IERC165};
     use starknet::ContractAddress;
+    use rules_utils::utils::storage::Felt252SpanStorageAccess;
 
     #[storage]
     struct Storage {
