@@ -5,16 +5,19 @@ mod JediNFT {
     use traits::{Into, TryInto, Default, Felt252DictValue};
     use array::{SpanSerde, ArrayTrait};
     use clone::Clone;
+    use ecdsa::check_ecdsa_signature;
+    use hash::LegacyHash;
     use zeroable::Zeroable;
     use rules_erc721::erc721::erc721;
     use rules_erc721::erc721::erc721::ERC721;
     use rules_erc721::erc721::erc721::ERC721::{HelperTrait as ERC721HelperTrait};
     use rules_erc721::erc721::interface::IERC721;
     use rules_erc721::introspection::erc165::{IERC165 as rules_erc721_IERC165};
+    use starknet::ContractAddress;
 
     #[storage]
     struct Storage {
-        _completed_tasks: LegacyMap::<(u256, u256), bool>,
+        _completed_tasks: LegacyMap::<(u256, u256, ContractAddress), bool>,
         _starkpath_public_key: felt252,
         _uri: Span<felt252>,
         _contract_uri: Span<felt252>,
@@ -48,6 +51,45 @@ mod JediNFT {
         let new_base_uri: Array<felt252> = base_uri.snapshot.clone();
         return append_number_ascii(new_base_uri, token_id).span();
     }
+
+    #[external(v0)]
+    fn contractURI(self: @ContractState) -> Span<felt252> {
+        return self._contract_uri.read();
+    }
+
+    #[external(v0)]
+    fn get_tasks_status(self: @ContractState, quest_id: u256, task_id: u256) -> bool {
+        return self._completed_tasks.read((quest_id, task_id, starknet::get_caller_address()));
+    }
+
+    #[external(v0)]
+    fn mint(ref self: ContractState, token_id: u256, quest_id: u256, task_id: u256, signature: Span<felt252>) {
+        let caller = starknet::get_caller_address();
+        let mut hashed = LegacyHash::hash(token_id.low.into(), token_id.high);
+        let hashed2 = LegacyHash::hash(quest_id.low.into(), quest_id.high);
+        let hashed3 = LegacyHash::hash(task_id.low.into(), task_id.high);
+        hashed = LegacyHash::hash(hashed, hashed2);
+        hashed = LegacyHash::hash(hashed, hashed3);
+        hashed = LegacyHash::hash(hashed, caller);
+        let starkpath_public_key = self._starkpath_public_key.read();
+        // assert(signature.len() == 2_u32, 'INVALID_SIGNATURE_LENGTH');
+        assert(
+            check_ecdsa_signature(
+                message_hash: hashed,
+                public_key: starkpath_public_key,
+                signature_r: *signature[0_u32],
+                signature_s: *signature[1_u32],
+            ),
+            'INVALID_SIGNATURE',
+        );
+        let is_minted = self._completed_tasks.read((quest_id, task_id, caller));
+        assert(!is_minted, 'ALREADY_MINTED');
+        self._completed_tasks.write((quest_id, task_id, caller), true);
+        let mut erc721_self = ERC721::unsafe_new_contract_state();
+        erc721_self._mint(to :caller, :token_id);
+
+    }
+
     //
     // ERC721 ABI impl
     //
