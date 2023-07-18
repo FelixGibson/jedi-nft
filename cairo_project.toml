@@ -1,0 +1,2 @@
+[crate_roots]
+jedi-nft = "src"

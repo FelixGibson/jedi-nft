@@ -5,6 +5,7 @@ mod JediNFT {
     use traits::{Into, TryInto, Default, Felt252DictValue};
     use array::{SpanSerde, ArrayTrait};
     use clone::Clone;
+    use array::SpanTrait;
     use ecdsa::check_ecdsa_signature;
     use hash::LegacyHash;
     use zeroable::Zeroable;
@@ -64,7 +65,7 @@ mod JediNFT {
     }
 
     #[external(v0)]
-    fn mint(ref self: ContractState, token_id: u256, quest_id: u256, task_id: u256, signature: Span<felt252>) {
+    fn mint_sig(ref self: ContractState, token_id: u256, quest_id: u256, task_id: u256, signature: Span<felt252>) {
         let caller = starknet::get_caller_address();
         let mut hashed = LegacyHash::hash(token_id.low.into(), token_id.high);
         let hashed2 = LegacyHash::hash(quest_id.low.into(), quest_id.high);
@@ -73,7 +74,7 @@ mod JediNFT {
         hashed = LegacyHash::hash(hashed, hashed3);
         hashed = LegacyHash::hash(hashed, caller);
         let starkpath_public_key = self._starkpath_public_key.read();
-        // assert(signature.len() == 2_u32, 'INVALID_SIGNATURE_LENGTH');
+        assert(signature.len() == 2_u32, 'INVALID_SIGNATURE_LENGTH');
         assert(
             check_ecdsa_signature(
                 message_hash: hashed,
