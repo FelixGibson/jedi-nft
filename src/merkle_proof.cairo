@@ -5,6 +5,7 @@ mod MerkleProof {
     use array::SpanTrait;
     use ecdsa::check_ecdsa_signature;
     use zeroable::Zeroable;
+    use debug::PrintTrait;
 
 
     fn verify(proof: Array<u256>, root: u256, leaf: u256) -> bool {
@@ -36,9 +37,9 @@ mod MerkleProof {
     }
 
     fn _efficient_hash(a: u256, b: u256) -> u256 {
-        let mut arr = ArrayTrait::new();
-        arr.append(a);
-        arr.append(b);
-        keccak::keccak_u256s_le_inputs(arr.span())
+        let hash1 = hash::pedersen(a.low.into(), a.high.into());
+        let hash2 = hash::pedersen(b.low.into(), b.high.into());
+        let ret = hash::pedersen(hash1, hash2);
+        return ret.into();
     }
 }
