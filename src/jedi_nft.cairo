@@ -92,6 +92,11 @@ mod JediNFT {
 
     }
 
+    #[external(v0)]
+    fn mint_whitelist(ref self: ContractState) {
+        
+    }
+
     //
     // ERC721 ABI impl
     //
