@@ -8,11 +8,11 @@ mod MerkleProof {
     use debug::PrintTrait;
 
 
-    fn verify(proof: Array<u256>, root: u256, leaf: u256) -> bool {
+    fn verify(proof: Array<felt252>, root: felt252, leaf: felt252) -> bool {
         return process_proof(proof, leaf) == root;
     }
 
-    fn process_proof(proof: Array<u256>, leaf: u256) -> u256 {
+    fn process_proof(proof: Array<felt252>, leaf: felt252) -> felt252 {
         let mut proof_clone = proof.clone();
         let mut computed_hash = leaf;
         loop {
@@ -28,18 +28,18 @@ mod MerkleProof {
         return computed_hash;
     }
 
-    fn _hash_pair(a: u256, b: u256) -> u256 {
-        if a < b {
+    fn _hash_pair(a: felt252, b: felt252) -> felt252 {
+        let a_tmp: u256 = a.into();
+        let b_tmp: u256 = b.into();
+        if a_tmp < b_tmp {
             _efficient_hash(a, b)
         } else {
             _efficient_hash(b, a)
         }
     }
 
-    fn _efficient_hash(a: u256, b: u256) -> u256 {
-        let hash1 = hash::pedersen(a.low.into(), a.high.into());
-        let hash2 = hash::pedersen(b.low.into(), b.high.into());
-        let ret = hash::pedersen(hash1, hash2);
+    fn _efficient_hash(a: felt252, b: felt252) -> felt252 {
+        let ret = hash::pedersen(a, b);
         return ret.into();
     }
 }
