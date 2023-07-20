@@ -13,14 +13,20 @@ mod JediNFT {
     use rules_erc721::erc721::erc721::ERC721;
     use rules_erc721::erc721::erc721::ERC721::{HelperTrait as ERC721HelperTrait};
     use rules_erc721::erc721::interface::IERC721;
+    use kass::access::ownable;
+    use kass::access::ownable::{Ownable, IOwnable};
+    use kass::access::ownable::Ownable::{
+        HelperTrait as OwnableHelperTrait, ModifierTrait as OwnableModifierTrait
+    };
     use rules_erc721::introspection::erc165::{IERC165 as rules_erc721_IERC165};
     use starknet::ContractAddress;
     use rules_utils::utils::storage::Felt252SpanStorageAccess;
+    use jedinft::merkle_proof::MerkleProof;
 
     #[storage]
     struct Storage {
-        _completed_tasks: LegacyMap::<(u256, u256, ContractAddress), bool>,
-        _starkpath_public_key: felt252,
+        _is_minted: LegacyMap::<ContractAddress, bool>,
+        _merkle_root: felt252,
         _uri: Span<felt252>,
         _contract_uri: Span<felt252>,
     }
@@ -35,67 +41,59 @@ mod JediNFT {
         name_: felt252,
         symbol_: felt252,
         uri_: Span<felt252>,
-        starkpath_public_key: felt252,
         contract_uri: Span<felt252>
     ) {
         self._uri.write(uri_);
         let mut erc721_self = ERC721::unsafe_new_contract_state();
         // ERC721 init
         erc721_self.initializer(:name_, :symbol_);
-        self._starkpath_public_key.write(starkpath_public_key);
         self._contract_uri.write(contract_uri);
     }
 
 
+    #[generate_trait]
     #[external(v0)]
-    fn tokenURI(self: @ContractState, token_id: u256) -> Span<felt252> {
-        let base_uri = self._uri.read();
-        let new_base_uri: Array<felt252> = base_uri.snapshot.clone();
-        return append_number_ascii(new_base_uri, token_id).span();
+    impl JediNFTImpl of IJediNFT {
+        fn tokenURI(self: @ContractState, token_id: u256) -> Span<felt252> {
+            let base_uri = self._uri.read();
+            let new_base_uri: Array<felt252> = base_uri.snapshot.clone();
+            return append_number_ascii(new_base_uri, token_id).span();
+        }
+
+        fn contractURI(self: @ContractState) -> Span<felt252> {
+            return self._contract_uri.read();
+        }
+
+        fn is_minted(self: @ContractState, address: ContractAddress) -> bool {
+            return self._is_minted.read(address);
+        }
+
+        fn set_merkle_root(ref self: ContractState, merkle_root: felt252) {
+            // TODO owner check
+
+            self._merkle_root.write(merkle_root);
+        }
+
+        fn get_merkle_root(self: @ContractState) -> felt252 {
+            return self._merkle_root.read();
+        }
+
+        fn mint_whitelist(ref self: ContractState, token_id: u128, proof: Array<felt252>) {
+            let caller = starknet::get_caller_address();
+            // TODO verify
+            let merkle_root = self._merkle_root.read();
+            let leaf = hash::pedersen(caller.into(), token_id.into());
+            assert(MerkleProof::verify(proof, merkle_root, leaf) == true, 'verify failed');
+
+
+            let is_minted = self._is_minted.read(caller);
+            assert(!is_minted, 'ALREADY_MINTED');
+            self._is_minted.write(caller, true);
+            let mut erc721_self = ERC721::unsafe_new_contract_state();
+            erc721_self._mint(to: caller, token_id:token_id.into());
+        }
     }
 
-    #[external(v0)]
-    fn contractURI(self: @ContractState) -> Span<felt252> {
-        return self._contract_uri.read();
-    }
-
-    #[external(v0)]
-    fn get_tasks_status(self: @ContractState, quest_id: u256, task_id: u256) -> bool {
-        return self._completed_tasks.read((quest_id, task_id, starknet::get_caller_address()));
-    }
-
-    #[external(v0)]
-    fn mint_sig(ref self: ContractState, token_id: u256, quest_id: u256, task_id: u256, signature: Span<felt252>) {
-        let caller = starknet::get_caller_address();
-        let mut hashed = LegacyHash::hash(token_id.low.into(), token_id.high);
-        let hashed2 = LegacyHash::hash(quest_id.low.into(), quest_id.high);
-        let hashed3 = LegacyHash::hash(task_id.low.into(), task_id.high);
-        hashed = LegacyHash::hash(hashed, hashed2);
-        hashed = LegacyHash::hash(hashed, hashed3);
-        hashed = LegacyHash::hash(hashed, caller);
-        let starkpath_public_key = self._starkpath_public_key.read();
-        assert(signature.len() == 2_u32, 'INVALID_SIGNATURE_LENGTH');
-        assert(
-            check_ecdsa_signature(
-                message_hash: hashed,
-                public_key: starkpath_public_key,
-                signature_r: *signature[0_u32],
-                signature_s: *signature[1_u32],
-            ),
-            'INVALID_SIGNATURE',
-        );
-        let is_minted = self._completed_tasks.read((quest_id, task_id, caller));
-        assert(!is_minted, 'ALREADY_MINTED');
-        self._completed_tasks.write((quest_id, task_id, caller), true);
-        let mut erc721_self = ERC721::unsafe_new_contract_state();
-        erc721_self._mint(to :caller, :token_id);
-
-    }
-
-    #[external(v0)]
-    fn mint_whitelist(ref self: ContractState) {
-        
-    }
 
     //
     // ERC721 ABI impl
@@ -191,9 +189,11 @@ mod JediNFT {
         // IERC165
 
         fn supports_interface(self: @ContractState, interface_id: u32) -> bool {
-            let erc721_self = ERC721::unsafe_new_contract_state();
+            // let erc721_self = ERC721::unsafe_new_contract_state();
 
-            erc721_self.supports_interface(:interface_id)
+            // erc721_self.supports_interface(:interface_id)
+            // TODO
+            false
         }
     }
 
@@ -207,11 +207,5 @@ mod JediNFT {
             uri.append(digit.low.into() + 48);
         };
         return uri;
-    }
-
-
-    #[generate_trait]
-    impl HelperImpl of HelperTrait {
-
     }
 }
