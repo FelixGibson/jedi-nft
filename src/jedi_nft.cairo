@@ -29,7 +29,7 @@ mod JediNFT {
     use hash::LegacyHash;
     use zeroable::Zeroable;
     use rules_erc721::erc721::erc721;
-    use rules_erc721::erc721::erc721::ERC721;
+    use rules_erc721::erc721::erc721::{ERC721, ERC721ABI};
     use rules_erc721::erc721::erc721::ERC721::{InternalTrait as ERC721InternalTrait, ISRC5};
     use rules_erc721::erc721::interface::{IERC721, IERC721Camel};
     // use kass::access::ownable;
@@ -116,7 +116,7 @@ mod JediNFT {
     //
 
     #[external(v0)]
-    impl IERC721Impl of erc721::ERC721ABI<ContractState> {
+    impl IERC721Impl of ERC721ABI<ContractState> {
         // IERC721
 
         fn name(self: @ContractState) -> felt252 {
@@ -214,27 +214,19 @@ mod JediNFT {
     #[external(v0)]
     impl JediERC721CamelImpl of IERC721Camel<ContractState> {
         fn tokenUri(self: @ContractState, tokenId: u256) -> felt252 {
-            let erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.token_uri(token_id: tokenId)
+            ERC721ABI::token_uri(self, token_id: tokenId)
         }
 
         fn balanceOf(self: @ContractState, account: starknet::ContractAddress) -> u256 {
-            let erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.balance_of(:account)
+            ERC721ABI::balance_of(self, account: account)
         }
 
         fn ownerOf(self: @ContractState, tokenId: u256) -> starknet::ContractAddress {
-            let erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.owner_of(token_id: tokenId)
+            ERC721ABI::owner_of(self, token_id: tokenId)
         }
 
         fn getApproved(self: @ContractState, tokenId: u256) -> starknet::ContractAddress {
-            let erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.get_approved(token_id: tokenId)
+            ERC721ABI::get_approved(self, token_id: tokenId)
         }
 
         fn isApprovedForAll(
@@ -242,9 +234,7 @@ mod JediNFT {
             owner: starknet::ContractAddress,
             operator: starknet::ContractAddress
         ) -> bool {
-            let erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.is_approved_for_all(:owner, :operator)
+            ERC721ABI::is_approved_for_all(self, owner: owner, operator: operator)
         }
 
         fn transferFrom(
@@ -253,9 +243,7 @@ mod JediNFT {
             to: starknet::ContractAddress,
             tokenId: u256
         ) {
-            let mut erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.transfer_from(:from, :to, token_id: tokenId);
+            ERC721ABI::transfer_from(ref self, :from, :to, token_id: tokenId);
         }
 
         fn safeTransferFrom(
@@ -265,17 +253,13 @@ mod JediNFT {
             tokenId: u256,
             data: Span<felt252>
         ) {
-            let mut erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.safe_transfer_from(:from, :to, token_id: tokenId, :data);
+            ERC721ABI::safe_transfer_from(ref self, :from, :to, token_id: tokenId, :data);
         }
 
         fn setApprovalForAll(
             ref self: ContractState, operator: starknet::ContractAddress, approved: bool
         ) {
-            let mut erc721_self = ERC721::unsafe_new_contract_state();
-
-            erc721_self.set_approval_for_all(:operator, :approved);
+            ERC721ABI::set_approval_for_all(ref self, :operator, :approved);
         }
     }
 
