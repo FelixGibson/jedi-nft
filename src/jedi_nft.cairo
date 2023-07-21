@@ -34,10 +34,10 @@ mod JediNFT {
     use rules_erc721::erc721::interface::{
         IERC721, IERC721Camel, IERC721Metadata, IERC721MetadataCamel
     };
-    use rules_tokens::access::ownable::{Ownable, IOwnable};
-    use rules_tokens::access::ownable::Ownable::{
-        ModifierTrait as OwnableModifierTrait, InternalTrait as OwnableInternalTrait,
-    };
+    // use rules_tokens::access::ownable::{Ownable, IOwnable};
+    // use rules_tokens::access::ownable::Ownable::{
+    //     ModifierTrait as OwnableModifierTrait, InternalTrait as OwnableInternalTrait,
+    // };
     use starknet::ContractAddress;
     use rules_utils::utils::storage::Felt252SpanStorageAccess;
     use jedinft::merkle_proof::MerkleProof;

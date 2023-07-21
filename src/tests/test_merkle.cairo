@@ -1,3 +1,4 @@
+use jedinft::jedi_nft::IJediNFTDispatcherTrait;
 use jedinft::merkle_proof::MerkleProof;
 
 use core::serde::Serde;
@@ -59,10 +60,27 @@ fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
 #[test]
 #[available_gas(20000000)]
 fn test_constructor() {
-    starknet::testing::set_caller_address(starknet::contract_address_const::<1>());
+    let caller = starknet::contract_address_const::<0x0138EfE7c064c69140e715f58d1e29FC75E5594D342E568246a4D6a3131a5974>();
+    starknet::testing::set_contract_address(caller);
     let mut jedi_contract_address = setup_dispatcher(URI());
     let mut jedi_nft =   IJediNFTDispatcher { contract_address: jedi_contract_address };
     let mut erc721 = ERC721ABIDispatcher { contract_address: jedi_contract_address };
 
     assert(erc721.name() == 'Jedi NFT', 'name failed');
+
+    jedi_nft.set_merkle_root(0x7c0dea5dd97a1f88cfb6aa0ab897b41b2f7864dbad24277e6e7b73c99d8e2f1);
+    let mut proof = ArrayTrait::new();
+    proof.append(0x758c3cabef0baa56cb2e133253576ada4ecc74257a9a26ef581c7b675d4dbc7);
+    proof.append(0x5ae1153fec126641f138769c7e9c3942e5f05f0e80ba06462eb7135235c8997);
+    proof.append(0x2f5ba2761c55521b1141b05a0c21b5b80e2e9e592e9f042242e06fc0b2cb10b);
+    let token_id = 1_u128;
+
+    let root = jedi_nft.get_merkle_root();
+    let leaf = 0x39aa9f464fb8ddbb69a861fca02e42c89268db85c3708b2f70024bec1b7cf9d;
+    assert(MerkleProof::verify(proof.clone(), root, leaf) == true, 'verify failed');
+
+
+    jedi_nft.mint_whitelist(token_id, proof);
+    assert(erc721.owner_of(token_id.into()) == caller, 'owner_of failed');
+    assert(jedi_nft.is_minted(caller) == true, 'is_minted failed');
 }
