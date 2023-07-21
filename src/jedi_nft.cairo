@@ -34,10 +34,10 @@ mod JediNFT {
     use rules_erc721::erc721::interface::{
         IERC721, IERC721Camel, IERC721Metadata, IERC721MetadataCamel
     };
-    // use rules_tokens::access::ownable::{Ownable, IOwnable};
-    // use rules_tokens::access::ownable::Ownable::{
-    //     ModifierTrait as OwnableModifierTrait, InternalTrait as OwnableInternalTrait,
-    // };
+    use jedinft::access::ownable::{Ownable, IOwnable};
+    use jedinft::access::ownable::Ownable::{
+        ModifierTrait as OwnableModifierTrait, InternalTrait as OwnableInternalTrait,
+    };
     use starknet::ContractAddress;
     use rules_utils::utils::storage::Felt252SpanStorageAccess;
     use jedinft::merkle_proof::MerkleProof;
@@ -60,13 +60,17 @@ mod JediNFT {
         name_: felt252,
         symbol_: felt252,
         uri_: Span<felt252>,
-        contract_uri: Span<felt252>
+        contract_uri: Span<felt252>,
+        owner_: starknet::ContractAddress,
     ) {
         self._uri.write(uri_);
         let mut erc721_self = ERC721::unsafe_new_contract_state();
         // ERC721 init
         erc721_self.initializer(:name_, :symbol_);
         self._contract_uri.write(contract_uri);
+
+        let mut ownable_self = Ownable::unsafe_new_contract_state();
+        ownable_self._transfer_ownership(new_owner: owner_);
     }
 
 
@@ -87,8 +91,7 @@ mod JediNFT {
         }
 
         fn set_merkle_root(ref self: ContractState, merkle_root: felt252) {
-            // TODO owner check
-
+            self._only_owner();
             self._merkle_root.write(merkle_root);
         }
 
@@ -280,6 +283,36 @@ mod JediNFT {
                 uri.append(digit.low.into() + 48);
             };
             return uri;
+        }
+    }
+
+    #[generate_trait]
+    impl ModifierImpl of ModifierTrait {
+        fn _only_owner(self: @ContractState) {
+            let mut ownable_self = Ownable::unsafe_new_contract_state();
+
+            ownable_self.assert_only_owner();
+        }
+    }
+
+    #[external(v0)]
+    impl IOwnableImpl of IOwnable<ContractState> {
+        fn owner(self: @ContractState) -> starknet::ContractAddress {
+            let ownable_self = Ownable::unsafe_new_contract_state();
+
+            ownable_self.owner()
+        }
+
+        fn transfer_ownership(ref self: ContractState, new_owner: starknet::ContractAddress) {
+            let mut ownable_self = Ownable::unsafe_new_contract_state();
+
+            ownable_self.transfer_ownership(:new_owner);
+        }
+
+        fn renounce_ownership(ref self: ContractState) {
+            let mut ownable_self = Ownable::unsafe_new_contract_state();
+
+            ownable_self.renounce_ownership();
         }
     }
 }

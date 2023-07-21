@@ -41,6 +41,10 @@ fn URI() -> Span<felt252> {
     uri.span()
 }
 
+fn OWNER() -> ContractAddress {
+    return starknet::contract_address_const::<0x0138EfE7c064c69140e715f58d1e29FC75E5594D342E568246a4D6a3131a5974>();
+}
+
 fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
     let mut calldata = ArrayTrait::new();
 
@@ -48,6 +52,7 @@ fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
     'a'.serialize(ref output: calldata);
     uri.serialize(ref output: calldata);
     uri.serialize(ref output: calldata);
+    OWNER().serialize(ref output: calldata);
 
     let (address, _) = starknet::deploy_syscall(
         JediNFT::TEST_CLASS_HASH.try_into().unwrap(), 0, calldata.span(), false
@@ -60,7 +65,7 @@ fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
 #[test]
 #[available_gas(20000000)]
 fn test_constructor() {
-    let caller = starknet::contract_address_const::<0x0138EfE7c064c69140e715f58d1e29FC75E5594D342E568246a4D6a3131a5974>();
+    let caller = OWNER();
     starknet::testing::set_contract_address(caller);
     let mut jedi_contract_address = setup_dispatcher(URI());
     let mut jedi_nft =   IJediNFTDispatcher { contract_address: jedi_contract_address };
