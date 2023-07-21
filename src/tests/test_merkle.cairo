@@ -14,7 +14,8 @@ use option::OptionTrait;
 use starknet::class_hash::Felt252TryIntoClassHash;
 use traits::TryInto;
 
-use jedinft::jedi_nft::JediNFT;
+use jedinft::jedi_nft::{ IJediNFT, IJediNFTDispatcher, JediNFT  };
+use rules_erc721::erc721::erc721::{ ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait };
 
 
 #[test]
@@ -42,7 +43,7 @@ fn URI() -> Span<felt252> {
 fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
     let mut calldata = ArrayTrait::new();
 
-    'a'.serialize(ref output: calldata);
+    'Jedi NFT'.serialize(ref output: calldata);
     'a'.serialize(ref output: calldata);
     uri.serialize(ref output: calldata);
     uri.serialize(ref output: calldata);
@@ -60,6 +61,8 @@ fn setup_dispatcher(uri: Span<felt252>) -> ContractAddress {
 fn test_constructor() {
     starknet::testing::set_caller_address(starknet::contract_address_const::<1>());
     let mut jedi_contract_address = setup_dispatcher(URI());
-// let mut jedi_nft =   IInstaSwapPairDispatcher { contract_address: instaswap_pair_address };
+    let mut jedi_nft =   IJediNFTDispatcher { contract_address: jedi_contract_address };
+    let mut erc721 = ERC721ABIDispatcher { contract_address: jedi_contract_address };
 
+    assert(erc721.name() == 'Jedi NFT', 'name failed');
 }

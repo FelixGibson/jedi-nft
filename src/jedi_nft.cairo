@@ -29,7 +29,7 @@ mod JediNFT {
     use hash::LegacyHash;
     use zeroable::Zeroable;
     use rules_erc721::erc721::erc721;
-    use rules_erc721::erc721::erc721::{ERC721, ERC721ABI};
+    use rules_erc721::erc721::erc721::{ERC721, ERC721ABI, ERC721ABIDispatcher};
     use rules_erc721::erc721::erc721::ERC721::{InternalTrait as ERC721InternalTrait, ISRC5};
     use rules_erc721::erc721::interface::{IERC721, IERC721Camel};
     // use kass::access::ownable;
