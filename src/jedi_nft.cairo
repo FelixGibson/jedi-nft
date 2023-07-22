@@ -21,6 +21,7 @@ trait IJediNFT<TContractState> {
 
 #[starknet::contract]
 mod JediNFT {
+    use option::OptionTrait;
     use traits::{Into, TryInto, Default, Felt252DictValue};
     use array::{SpanSerde, ArrayTrait};
     use clone::Clone;
@@ -273,14 +274,16 @@ mod JediNFT {
 
     #[generate_trait]
     impl InternalImpl of InternalTrait {
-        fn append_number_ascii(mut uri: Array<felt252>, mut number: u256) -> Array<felt252> {
+        fn append_number_ascii(mut uri: Array<felt252>, mut number_in: u256) -> Array<felt252> {
+            // TODO: replace with u256 divide once it's implemented on network
+            let mut number: u128 = number_in.try_into().unwrap();
             loop {
                 if number == 0 {
                     break;
                 }
-                let digit: u256 = number % 10;
+                let digit: u128 = number % 10;
                 number /= 10;
-                uri.append(digit.low.into() + 48);
+                uri.append(digit.into() + 48);
             };
             return uri;
         }
