@@ -1,5 +1,4 @@
 use jedinft::jedi_nft::IJediNFTDispatcherTrait;
-use jedinft::merkle_proof::MerkleProof;
 
 use core::serde::Serde;
 use clone::Clone;
@@ -17,18 +16,22 @@ use traits::TryInto;
 
 use jedinft::jedi_nft::{ IJediNFT, IJediNFTDispatcher, JediNFT  };
 use rules_erc721::erc721::erc721::{ ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait };
+use alexandria::data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait};
+use hash::LegacyHash;
 
 
 #[test]
 #[available_gas(10000000)]
-fn test_verify() {
+fn test_verify_alexandria() {
     let mut proof = ArrayTrait::<felt252>::new();
     proof.append(2);
     proof.append(0x262697b88544f733e5c6907c3e1763131e9f14c51ee7951258abbfb29415fbf);
     proof.append(0x5d768cbfb58b59a888e5ae9fe5d55d83b9b0c1d9365e28e3fe4849f8135ddc3);
     let leaf: felt252 = 1;
     let root: felt252 = 0x329d5b51e352537e8424bfd85b34d0f30b77d213e9b09e2976e6f6374ecb59;
-    assert(MerkleProof::verify(proof, root, leaf) == true, 'verify failed');
+    let mut merkle_tree = MerkleTreeTrait::new();
+    let result = merkle_tree.verify(root, leaf, proof.span());
+    assert(result == true, 'wrong result');
 }
 
 fn URI() -> Span<felt252> {
@@ -79,10 +82,6 @@ fn test_constructor() {
     proof.append(0x5ae1153fec126641f138769c7e9c3942e5f05f0e80ba06462eb7135235c8997);
     proof.append(0x2f5ba2761c55521b1141b05a0c21b5b80e2e9e592e9f042242e06fc0b2cb10b);
     let token_id = 1_u128;
-
-    let root = jedi_nft.get_merkle_root();
-    let leaf = 0x39aa9f464fb8ddbb69a861fca02e42c89268db85c3708b2f70024bec1b7cf9d;
-    assert(MerkleProof::verify(proof.clone(), root, leaf) == true, 'verify failed');
 
 
     jedi_nft.mint_whitelist(token_id, proof);

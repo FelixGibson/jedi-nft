@@ -41,7 +41,7 @@ mod JediNFT {
     };
     use starknet::ContractAddress;
     use rules_utils::utils::storage::Felt252SpanStorageAccess;
-    use jedinft::merkle_proof::MerkleProof;
+    use alexandria::data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait};
 
     #[storage]
     struct Storage {
@@ -104,7 +104,9 @@ mod JediNFT {
             let caller = starknet::get_caller_address();
             let merkle_root = self._merkle_root.read();
             let leaf = hash::pedersen(caller.into(), token_id.into());
-            assert(MerkleProof::verify(proof, merkle_root, leaf) == true, 'verify failed');
+            let mut merkle_tree = MerkleTreeTrait::new();
+            let result = merkle_tree.verify(merkle_root, leaf, proof.span());
+            assert(result == true, 'verify failed');
 
             let is_minted = self._is_minted.read(caller);
             assert(!is_minted, 'ALREADY_MINTED');
