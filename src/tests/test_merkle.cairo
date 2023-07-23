@@ -14,8 +14,8 @@ use option::OptionTrait;
 use starknet::class_hash::Felt252TryIntoClassHash;
 use traits::TryInto;
 
-use jedinft::jedi_nft::{ IJediNFT, IJediNFTDispatcher, JediNFT  };
-use rules_erc721::erc721::erc721::{ ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait };
+use jedinft::jedi_nft::{IJediNFT, IJediNFTDispatcher, JediNFT};
+use rules_erc721::erc721::erc721::{ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
 use alexandria::data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait};
 use hash::LegacyHash;
 
@@ -71,7 +71,7 @@ fn test_constructor() {
     let caller = OWNER();
     starknet::testing::set_contract_address(caller);
     let mut jedi_contract_address = setup_dispatcher(URI());
-    let mut jedi_nft =   IJediNFTDispatcher { contract_address: jedi_contract_address };
+    let mut jedi_nft = IJediNFTDispatcher { contract_address: jedi_contract_address };
     let mut erc721 = ERC721ABIDispatcher { contract_address: jedi_contract_address };
 
     assert(erc721.name() == 'Jedi NFT', 'name failed');
@@ -82,7 +82,6 @@ fn test_constructor() {
     proof.append(0x5ae1153fec126641f138769c7e9c3942e5f05f0e80ba06462eb7135235c8997);
     proof.append(0x2f5ba2761c55521b1141b05a0c21b5b80e2e9e592e9f042242e06fc0b2cb10b);
     let token_id = 1_u128;
-
 
     jedi_nft.mint_whitelist(token_id, proof);
     assert(erc721.owner_of(token_id.into()) == caller, 'owner_of failed');
