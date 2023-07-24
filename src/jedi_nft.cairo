@@ -31,9 +31,11 @@ mod JediNFT {
     use zeroable::Zeroable;
     use rules_erc721::erc721::erc721;
     use rules_erc721::erc721::erc721::{ERC721, ERC721ABI, ERC721ABIDispatcher};
-    use rules_erc721::erc721::erc721::ERC721::{InternalTrait as ERC721InternalTrait, ISRC5};
+    use rules_erc721::erc721::erc721::ERC721::{
+        InternalTrait as ERC721InternalTrait, ISRC5, ISRC5Camel
+    };
     use rules_erc721::erc721::interface::{
-        IERC721, IERC721Camel, IERC721Metadata, IERC721MetadataCamel
+        IERC721, IERC721CamelOnly, IERC721Metadata, IERC721MetadataCamelOnly
     };
     use jedinft::access::ownable::{Ownable, IOwnable};
     use jedinft::access::ownable::Ownable::{
@@ -198,6 +200,13 @@ mod JediNFT {
     }
 
     #[external(v0)]
+    impl ISRC5CamelImpl of ISRC5Camel<ContractState> {
+        fn supportsInterface(self: @ContractState, interfaceId: felt252) -> bool {
+            self.supports_interface(interface_id: interfaceId)
+        }
+    }
+
+    #[external(v0)]
     impl IERC721MetadataImpl of IERC721Metadata<ContractState> {
         fn name(self: @ContractState) -> felt252 {
             let erc721_self = ERC721::unsafe_new_contract_state();
@@ -219,7 +228,7 @@ mod JediNFT {
     }
 
     #[external(v0)]
-    impl JediERC721CamelImpl of IERC721Camel<ContractState> {
+    impl JediERC721CamelImpl of IERC721CamelOnly<ContractState> {
         fn balanceOf(self: @ContractState, account: starknet::ContractAddress) -> u256 {
             IERC721::balance_of(self, account: account)
         }
@@ -267,7 +276,7 @@ mod JediNFT {
     }
 
     #[external(v0)]
-    impl IERC721MetadataCamelImpl of IERC721MetadataCamel<ContractState> {
+    impl IERC721MetadataCamelImpl of IERC721MetadataCamelOnly<ContractState> {
         fn tokenUri(self: @ContractState, tokenId: u256) -> felt252 {
             IERC721Metadata::token_uri(self, token_id: tokenId)
         }
