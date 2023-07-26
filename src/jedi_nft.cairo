@@ -16,6 +16,12 @@ trait IJediNFT<TContractState> {
 
     fn get_merkle_root(self: @TContractState) -> felt252;
 
+    fn set_mint_sig_pub_key(ref self: TContractState, mint_sig_public_key: felt252);
+
+    fn get_mint_sig_pub_key(self: @TContractState) -> felt252;
+
+    fn mint_sig(ref self: TContractState, token_id: u128, signature: Span<felt252>);
+
     fn mint_whitelist(ref self: TContractState, token_id: u128, proof: Array<felt252>);
 }
 
@@ -51,6 +57,7 @@ mod JediNFT {
         _merkle_root: felt252,
         _uri: Span<felt252>,
         _contract_uri: Span<felt252>,
+        _mint_sig_public_key: felt252,
     }
 
     //
@@ -105,6 +112,7 @@ mod JediNFT {
         fn mint_whitelist(ref self: ContractState, token_id: u128, proof: Array<felt252>) {
             let caller = starknet::get_caller_address();
             let merkle_root = self._merkle_root.read();
+            assert(merkle_root != 0, 'MERKLE_ROOT_NOT_SET');
             let leaf = hash::pedersen(caller.into(), token_id.into());
             let mut merkle_tree = MerkleTreeTrait::new();
             let result = merkle_tree.verify(merkle_root, leaf, proof.span());
@@ -115,6 +123,39 @@ mod JediNFT {
             self._is_minted.write(caller, true);
             let mut erc721_self = ERC721::unsafe_new_contract_state();
             erc721_self._mint(to: caller, token_id: token_id.into());
+        }
+
+        fn set_mint_sig_pub_key(ref self: ContractState, mint_sig_public_key: felt252) {
+            self._only_owner();
+            self._mint_sig_public_key.write(mint_sig_public_key);
+        }
+
+        fn get_mint_sig_pub_key(self: @ContractState) -> felt252 {
+            return self._mint_sig_public_key.read();
+        }
+
+        fn mint_sig(ref self: ContractState, token_id: u128, signature: Span<felt252>) {
+            let mint_sig_public_key = self._mint_sig_public_key.read();
+            assert(mint_sig_public_key != 0, 'MINT_SIG_PUBLIC_KEY_NOT_SET');
+            let caller = starknet::get_caller_address();
+            let token_id_ : felt252 = token_id.into();
+            let hashed = LegacyHash::hash(caller.into(), token_id_);
+            assert(signature.len() == 2_u32, 'INVALID_SIGNATURE_LENGTH');
+            assert(
+                check_ecdsa_signature(
+                    message_hash: hashed,
+                    public_key: mint_sig_public_key,
+                    signature_r: *signature[0_u32],
+                    signature_s: *signature[1_u32],
+                ),
+                'INVALID_SIGNATURE',
+            );
+            let is_minted = self._is_minted.read(caller);
+            assert(!is_minted, 'ALREADY_MINTED');
+            self._is_minted.write(caller, true);
+            let mut erc721_self = ERC721::unsafe_new_contract_state();
+            erc721_self._mint(to: caller, token_id: token_id.into());
+
         }
     }
 
