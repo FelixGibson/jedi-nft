@@ -16,7 +16,7 @@ use traits::TryInto;
 
 use jedinft::jedi_nft::{IJediNFT, IJediNFTDispatcher, JediNFT};
 use rules_erc721::erc721::erc721::{ERC721ABI, ERC721ABIDispatcher, ERC721ABIDispatcherTrait};
-use alexandria::data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait};
+use alexandria_data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait, MerkleTreeImpl, pedersen::PedersenHasherImpl };
 use hash::LegacyHash;
 
 
@@ -29,7 +29,7 @@ fn test_verify_alexandria() {
     proof.append(0x5d768cbfb58b59a888e5ae9fe5d55d83b9b0c1d9365e28e3fe4849f8135ddc3);
     let leaf: felt252 = 1;
     let root: felt252 = 0x329d5b51e352537e8424bfd85b34d0f30b77d213e9b09e2976e6f6374ecb59;
-    let mut merkle_tree = MerkleTreeTrait::new();
+    let mut merkle_tree = MerkleTreeImpl::<_, PedersenHasherImpl>::new();
     let result = merkle_tree.verify(root, leaf, proof.span());
     assert(result == true, 'wrong result');
 }

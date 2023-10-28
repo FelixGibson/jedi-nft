@@ -48,8 +48,8 @@ mod JediNFT {
         ModifierTrait as OwnableModifierTrait, InternalTrait as OwnableInternalTrait,
     };
     use starknet::ContractAddress;
-    use rules_utils::utils::storage::Felt252SpanStorageAccess;
-    use alexandria::data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait};
+    use rules_utils::utils::storage::StoreSpanFelt252;
+    use alexandria_data_structures::merkle_tree::{MerkleTree, MerkleTreeTrait, MerkleTreeImpl, pedersen::PedersenHasherImpl };
 
     #[storage]
     struct Storage {
@@ -113,8 +113,8 @@ mod JediNFT {
             let caller = starknet::get_caller_address();
             let merkle_root = self._merkle_root.read();
             assert(merkle_root != 0, 'MERKLE_ROOT_NOT_SET');
-            let leaf = hash::pedersen(caller.into(), token_id.into());
-            let mut merkle_tree = MerkleTreeTrait::new();
+            let leaf = pedersen::pedersen(caller.into(), token_id.into());
+            let mut merkle_tree = MerkleTreeImpl::<_, PedersenHasherImpl>::new();
             let result = merkle_tree.verify(merkle_root, leaf, proof.span());
             assert(result == true, 'verify failed');
 
